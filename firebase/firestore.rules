@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Setiap dokumen pengguna hanya dapat diakses oleh pemilik akun
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+      // Subkoleksi kategori milik pengguna
+      match /categories/{id} {
+        allow read, delete: if request.auth != null && request.auth.uid == uid;
+        allow create, update: if request.auth != null
+            && request.auth.uid == uid
+            && request.resource.data.type in ['income', 'expense']
+            && request.resource.data.name is string;
+      }
+
+      // Subkoleksi transaksi milik pengguna
+      match /transactions/{id} {
+        allow read, delete: if request.auth != null && request.auth.uid == uid;
+        allow create, update: if request.auth != null
+            && request.auth.uid == uid
+            && request.resource.data.type in ['income', 'expense']
+            && request.resource.data.nominal is int
+            && request.resource.data.nominal > 0;
+      }
+    }
+  }
+}
+
